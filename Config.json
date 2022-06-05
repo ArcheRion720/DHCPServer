@@ -1,0 +1,18 @@
+﻿[
+  {
+    "Name": "CoolServer",
+    "Endpoint": "192.168.0.1",
+    "StartPool": "192.168.0.10",
+    "EndPool": "192.168.0.20",
+    "Mask": "255.255.255.0",
+    "Gateway": "192.168.0.1",
+    "DNSServer": "8.8.8.8",
+    "LeaseTime": 86400,
+    "Reservations": [
+      {
+        "Hardware": "FF00FF00FF00",
+        "IPAddress": "192.168.0.25"
+      }
+    ]
+  }
+]
