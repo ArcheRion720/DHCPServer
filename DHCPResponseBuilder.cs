@@ -162,7 +162,7 @@ namespace DHCPServer
 
         public static byte[]? BuildDHCPAckResponse(DHCPPacket dhcpPacket, DHCPServer server)
         {
-            DHCPClient? client = server.Clients.FirstOrDefault(x => DHCPServer.ByteArrayComparer.Equals(x.HardwareAddress, dhcpPacket.ClientHWAddress));
+            DHCPClient? client = server.Clients.FirstOrDefault(x => MACAddressComparer.Instance.Equals(x.HardwareAddress, dhcpPacket.ClientHWAddress));
             if(client is null)
                 return null;
 

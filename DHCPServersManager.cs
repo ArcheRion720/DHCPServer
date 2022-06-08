@@ -27,9 +27,9 @@ namespace DHCPServer
         {
             DHCPServer server = new DHCPServer(config);
 
-            if (server.Config.Reservations is not null)
+            if (server.Config.Data.Reservations is not null)
             {
-                foreach (var item in server.Config.Reservations)
+                foreach (var item in server.Config.Data.Reservations)
                 {
                     if (PhysicalAddress.TryParse(item.Hardware, out var pa) && IPAddress.TryParse(item.IPAddress, out var ip))
                     {

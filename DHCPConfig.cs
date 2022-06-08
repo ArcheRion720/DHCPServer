@@ -16,8 +16,8 @@ namespace DHCPServer
         public byte[] LeaseTime { get; private set; }
         public uint LeaseTimeLong { get; private set; }
         public uint Length { get; private set; }
-        public string Name { get; private set; }
-        public List<IPReservation> Reservations { get; private set; }
+
+        public DHCPConfigStub Data { get; private set; }
 
 
         public static bool CreateConfig(DHCPConfigStub stub, out DHCPConfig config)
@@ -74,12 +74,7 @@ namespace DHCPServer
                     return false;
                 }
 
-                if(stub.Name != null)
-                {
-                    result.Name = stub.Name;
-                }
-
-                result.Reservations = stub.Reservations;
+                result.Data = stub;
 
                 config = result;
                 return true;

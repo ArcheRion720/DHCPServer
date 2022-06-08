@@ -14,7 +14,6 @@ namespace DHCPServer
 
         private readonly UdpClient udp;
         public readonly CancellationTokenSource cancellationToken;
-        public static ByteArrayCompare ByteArrayComparer { get; } = new ByteArrayCompare();
 
         public DHCPServer(DHCPConfig config)
         {
@@ -24,7 +23,7 @@ namespace DHCPServer
             Config = config;
             Clients = new List<DHCPClient>();
             Running = false;
-            Name = config.Name;
+            Name = config.Data.Name;
         }
         
         public void Start()
@@ -32,7 +31,7 @@ namespace DHCPServer
             Running = true;
             Thread serverThread = new(() =>
             {
-                UdpState state = new UdpState()
+                UdpState state = new()
                 {
                     endpoint = Config.Endpoint,
                     udpClient = udp
@@ -93,7 +92,7 @@ namespace DHCPServer
                         response = DHCPResponseBuilder.BuildDHCPOfferResponse(packet, this);
                         break;
                     case DHCPMessageType.Request:
-                        if(Clients.Any(x => ByteArrayComparer.Equals(packet.ClientHWAddress, x.HardwareAddress)))
+                        if(Clients.Any(x => MACAddressComparer.Instance.Equals(packet.ClientHWAddress, x.HardwareAddress)))
                         {
                             response = DHCPResponseBuilder.BuildDHCPAckResponse(packet, this);
                         }
@@ -103,7 +102,7 @@ namespace DHCPServer
                         }
                         break;
                     case DHCPMessageType.Release:
-                        DHCPClient client = Clients.FirstOrDefault(x => ByteArrayComparer.Equals(packet.ClientHWAddress, x.HardwareAddress));
+                        DHCPClient client = Clients.FirstOrDefault(x => MACAddressComparer.Instance.Equals(packet.ClientHWAddress, x.HardwareAddress));
                         response = null;
 
                         if(client is not null)
@@ -118,7 +117,7 @@ namespace DHCPServer
                 }
                 
                 if(response != null)
-                    state.udpClient.Send(response, response.Length, "192.168.56.255", 68);
+                    state.udpClient.Send(response, response.Length, Config.Broadcast);
             }
             else
             {
@@ -133,7 +132,7 @@ namespace DHCPServer
         public byte[] GetNextAddress(byte[] clienthw, out bool exists)
         {
             exists = false;
-            DHCPClient client = Clients.FirstOrDefault(x => ByteArrayComparer.Equals(x.HardwareAddress, clienthw));
+            DHCPClient client = Clients.FirstOrDefault(x => MACAddressComparer.Instance.Equals(x.HardwareAddress, clienthw));
             if (client is not null)
             {
                 exists = true;
