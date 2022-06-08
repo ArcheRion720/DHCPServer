@@ -7,10 +7,10 @@ namespace DHCPServer
     {
         public static void Main(String[] args)
         {
-            List<DHCPConfigStub>? configStubs = new List<DHCPConfigStub>();
-            if(File.Exists("Config.txt"))
+            List<DHCPConfigStub>? configStubs = null;
+            if(File.Exists("Config.json"))
             {
-                configStubs = JsonConvert.DeserializeObject<List<DHCPConfigStub>>(File.ReadAllText("Config.txt"));
+                configStubs = JsonConvert.DeserializeObject<List<DHCPConfigStub>>(File.ReadAllText("Config.json"));
             }
             
             if(configStubs is null)
