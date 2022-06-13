@@ -1,20 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using DHCPServer.Logging;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DHCPServer
 {
     public class DHCPServersManager
     {
         public List<DHCPServer> Servers { get; set; }
+        public FileLogger? Logger { get; private set; }
 
         private DHCPServersManager()
         {
             Servers = new List<DHCPServer>();
+            Logger = null;
         }
 
         private static DHCPServersManager? instance = null;
@@ -25,7 +23,7 @@ namespace DHCPServer
 
         public void AddServer(DHCPConfig config)
         {
-            DHCPServer server = new DHCPServer(config);
+            DHCPServer server = new DHCPServer(config, Logger);
 
             if (server.Config.Data.Reservations is not null)
             {
@@ -40,6 +38,11 @@ namespace DHCPServer
 
             server.Start();
             Servers.Add(server);
+        }
+
+        public void AddLogging(string file)
+        {
+            Logger = new FileLogger(file);
         }
 
         public void Stop()

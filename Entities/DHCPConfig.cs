@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using Newtonsoft.Json;
 using System.Net;
 
 namespace DHCPServer
@@ -16,13 +17,11 @@ namespace DHCPServer
         public byte[] LeaseTime { get; private set; }
         public uint LeaseTimeLong { get; private set; }
         public uint Length { get; private set; }
-
         public DHCPConfigStub Data { get; private set; }
-
 
         public static bool CreateConfig(DHCPConfigStub stub, out DHCPConfig config)
         {
-            DHCPConfig result = new DHCPConfig();
+            DHCPConfig result = new();
 
             if (IPAddress.TryParse(stub.StartPool,  out IPAddress startAddr)    &&
                 IPAddress.TryParse(stub.EndPool,    out IPAddress endAddr)      &&
@@ -47,6 +46,11 @@ namespace DHCPServer
                     result.Mask = maskBytes;
                     result.Length = endpool - startpool + 1;
                 }
+                else
+                {
+                    config = default;
+                    return false;
+                }
 
                 if(stub.DNSServer != null && IPAddress.TryParse(stub.DNSServer, out IPAddress dnsAddr))
                 {
@@ -56,11 +60,6 @@ namespace DHCPServer
                 if (stub.Gateway != null && IPAddress.TryParse(stub.Gateway, out IPAddress gateway))
                 {
                     result.Gateway = gateway.GetAddressBytes();
-                }
-                else
-                {
-                    config = default;
-                    return false;
                 }
 
                 if(stub.LeaseTime != null)
@@ -87,17 +86,17 @@ namespace DHCPServer
 
     public struct IPReservation
     {
-        public string Hardware { get; set; }
-        public string IPAddress { get; set; }
+        [JsonProperty(Required = Required.Always)] public string Hardware { get; set; }
+        [JsonProperty(Required = Required.Always)] public string IPAddress { get; set; }
     }
 
     public struct DHCPConfigStub
     {
+        [JsonProperty(Required = Required.Always)] public string Endpoint { get; set; }
+        [JsonProperty(Required = Required.Always)] public string StartPool { get; set; }
+        [JsonProperty(Required = Required.Always)] public string EndPool { get; set; }
+        [JsonProperty(Required = Required.Always)] public string Mask { get; set; }
         public string Name { get; set; }
-        public string Endpoint { get; set; }
-        public string StartPool { get; set; }
-        public string EndPool { get; set; }
-        public string Mask { get; set; }
         public string Gateway { get; set; }
         public string DNSServer { get; set; }
         public uint? LeaseTime { get; set; }

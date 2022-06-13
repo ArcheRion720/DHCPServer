@@ -1,7 +1,9 @@
 ﻿#nullable disable
+using DHCPServer.Logging;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
 
 namespace DHCPServer
 {
@@ -11,11 +13,12 @@ namespace DHCPServer
         public string Name { get; set; }
         public DHCPConfig Config { get; private set; }
         public List<DHCPClient> Clients { get; private set; }
+        public LoggerBase Logger { get; private set; }
 
         private readonly UdpClient udp;
         public readonly CancellationTokenSource cancellationToken;
 
-        public DHCPServer(DHCPConfig config)
+        public DHCPServer(DHCPConfig config, LoggerBase logger = null)
         {
             udp = new UdpClient(config.Endpoint);
             cancellationToken = new CancellationTokenSource();
@@ -24,10 +27,13 @@ namespace DHCPServer
             Clients = new List<DHCPClient>();
             Running = false;
             Name = config.Data.Name;
+            Logger = logger;
         }
         
         public void Start()
         {
+            Logger?.Log(LogLevel.INFO, $"DHCP starting at {Config.Endpoint}", Name);
+
             Running = true;
             Thread serverThread = new(() =>
             {
@@ -43,7 +49,8 @@ namespace DHCPServer
                     Thread.Sleep(100);
                 }
 
-                udp.EndReceive(areceive, ref state.endpoint!);
+                return;
+                //udp.EndReceive(areceive, ref state.endpoint!);
             });
 
             serverThread.Start();
@@ -89,16 +96,30 @@ namespace DHCPServer
                 switch ((DHCPMessageType)request.Data[0])
                 {
                     case DHCPMessageType.Discover:
+                        if (Logger is not null)
+                        {
+                            var message = $"Incoming DISCOVER packet from MAC {new PhysicalAddress(packet.ClientHWAddress.Take(6).ToArray())}";
+                            Logger.Log(LogLevel.INFO, message, Name);
+                        }
+
                         response = DHCPResponseBuilder.BuildDHCPOfferResponse(packet, this);
                         break;
                     case DHCPMessageType.Request:
+                        var ack = false;
                         if(Clients.Any(x => MACAddressComparer.Instance.Equals(packet.ClientHWAddress, x.HardwareAddress)))
                         {
                             response = DHCPResponseBuilder.BuildDHCPAckResponse(packet, this);
+                            ack = true;
                         }
                         else
                         {
                             response = DHCPResponseBuilder.BuildDHCPNakResponse(packet, this);
+                        }
+
+                        if (Logger is not null)
+                        {
+                            var message = $"Incoming REQUEST packet from MAC {new PhysicalAddress(packet.ClientHWAddress.Take(6).ToArray())}. {(ack ? "ACK" : "NAK")} sent.";
+                            Logger.Log(LogLevel.INFO, message, Name);
                         }
                         break;
                     case DHCPMessageType.Release:
@@ -108,20 +129,22 @@ namespace DHCPServer
                         if(client is not null)
                         {
                             client.State = LeaseState.Release;
-                        }
 
+                            if (Logger is not null)
+                            {
+                                var message = $"Incoming RELEASE packet from MAC {PhysicalAddress.Parse(Encoding.ASCII.GetString(packet.ClientHWAddress, 0, 6))}. Releasing IP address {new IPAddress(client.IPAddress)}";
+
+                                Logger.Log(LogLevel.INFO, message, Name);
+                            }
+                        }
                         break;
                     default:
-                        Console.WriteLine("Unknown packet");
+                        Logger?.Log(LogLevel.INFO, "Unknown packet received. Ignoring.", Name);
                         break;
                 }
                 
                 if(response != null)
                     state.udpClient.Send(response, response.Length, Config.Broadcast);
-            }
-            else
-            {
-                Console.WriteLine("Malformed or invalid packet");
             }
 
             if(!cancellationToken.IsCancellationRequested)

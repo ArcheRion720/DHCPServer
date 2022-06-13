@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using DHCPServer.Logging;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Text;
 
 namespace DHCPServer
 {
@@ -118,6 +121,12 @@ namespace DHCPServer
                     HardwareAddress = packet.ClientHWAddress,
                     State = LeaseState.Offer
                 });
+            }
+
+            if (server.Logger is not null)
+            {
+                var message = $"Sending OFFER packet to MAC {new PhysicalAddress(packet.ClientHWAddress.Take(6).ToArray())}. Offering {new IPAddress(address)}";
+                server.Logger.Log(LogLevel.INFO, message, server.Name);
             }
 
             return BuildResponseBytes(packet, options);
